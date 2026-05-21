@@ -119,6 +119,12 @@ def send_telegram_alert(message):
         st.error(f"Telegram alert failed: {e}")
 
         return False
+    
+    if st.sidebar.button("TEST TELEGRAM"):
+    if send_telegram_alert("hi"):
+        st.sidebar.success("Telegram test sent.")
+    else:
+        st.sidebar.error("Telegram test failed.")
 
 def send_email_alert(subject, message):
     sender_email = st.secrets.get("EMAIL_SENDER", os.getenv("EMAIL_SENDER", "")).strip()
