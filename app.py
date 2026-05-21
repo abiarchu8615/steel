@@ -465,11 +465,17 @@ elif selected_page == "Failure Prediction Demo":
 
     from train_models import train_model
 
-    if not model_path.exists():
-        st.warning("Training AI model for first deployment...")
-        train_model()
+    try:
+        if not model_path.exists():
+            st.warning("Training AI model for first deployment...")
+            train_model()
 
-    model = joblib.load(model_path)
+        model = joblib.load(model_path)
+
+    except Exception as e:
+        st.warning("Existing model is incompatible. Retraining model now...")
+        train_model()
+        model = joblib.load(model_path)
 
     sample = df.drop(
         columns=[
@@ -500,6 +506,7 @@ elif selected_page == "Failure Prediction Demo":
             st.error(f"Predicted Result: MACHINE FAILURE RISK ({proba:.2%})")
         else:
             st.success(f"Predicted Result: NORMAL ({proba:.2%} failure probability)")
+            
 elif selected_page == "Failure Trend Prediction":
     st.subheader("Failure Trend Prediction Before Breakdown")
     signal_map = get_signal_map()
