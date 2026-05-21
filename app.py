@@ -72,7 +72,7 @@ def load_metrics():
 # ALERT HELPERS
 # =========================
 def send_telegram_alert(message):
-    bot_token = st.secrets.get("TELEGRAM_BOT_TOKEN", os.getenv("TELEGRAM_BOT_TOKEN", "8230608175:AAGpNzXpK-bCNIbPlsT7bOms0ZRvNUF_3HU")).strip()
+    bot_token = st.secrets.get("TELEGRAM_BOT_TOKEN", os.getenv("TELEGRAM_BOT_TOKEN", "8230608175:AAHnMtm1w3oLcsTridWX11NfQmBBFdtQMfw")).strip()
     chat_id = st.secrets.get("TELEGRAM_CHAT_ID", os.getenv("TELEGRAM_CHAT_ID", "8172522699")).strip()
 
     if not bot_token or not chat_id:
