@@ -405,12 +405,12 @@ if selected_page == "Overview":
     - **Autonomous Maintenance Ticketing:** assign priority, owner, due time, and action.
     - **Telegram / Email Alerts:** notify maintenance teams from the dashboard.
     """)
-    st.dataframe(df.head(20), width="stretch")
+    st.dataframe(df.head(20), use_container_width=True)
 
     st.subheader("Failure Type Distribution")
     failure_counts = df["Failure Type"].value_counts().reset_index()
     failure_counts.columns = ["Failure Type", "Count"]
-    st.plotly_chart(px.bar(failure_counts, x="Failure Type", y="Count", title="Failure Type Distribution"), width="stretch")
+    st.plotly_chart(px.bar(failure_counts, x="Failure Type", y="Count", title="Failure Type Distribution"), use_container_width=True)
 
 elif selected_page == "Machine Health":
     st.subheader("Machine Health Monitoring")
@@ -419,30 +419,55 @@ elif selected_page == "Machine Health":
 
     c1, c2 = st.columns(2)
     with c1:
-        st.plotly_chart(px.scatter(view, x="Rotational speed [rpm]", y="Torque [Nm]", color="Machine failure", title="Speed vs Torque"), width="stretch")
+        st.plotly_chart(px.scatter(view, x="Rotational speed [rpm]", y="Torque [Nm]", color="Machine failure", title="Speed vs Torque"), use_container_width=True)
     with c2:
-        st.plotly_chart(px.scatter(view, x="Process temperature [K]", y="Tool wear [min]", color="Machine failure", title="Temperature vs Tool Wear"), width="stretch")
+        st.plotly_chart(px.scatter(view, x="Process temperature [K]", y="Tool wear [min]", color="Machine failure", title="Temperature vs Tool Wear"), use_container_width=True)
 
-    st.plotly_chart(px.line(view, x="Sample_Index", y=["Air temperature [K]", "Process temperature [K]"], title="Temperature Trend"), width="stretch")
-    st.plotly_chart(px.line(view, x="Sample_Index", y=["Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]"], title="Machine Sensor Trends"), width="stretch")
+    st.plotly_chart(px.line(view, x="Sample_Index", y=["Air temperature [K]", "Process temperature [K]"], title="Temperature Trend"), use_container_width=True)
+    st.plotly_chart(px.line(view, x="Sample_Index", y=["Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]"], title="Machine Sensor Trends"), use_container_width=True)
 
 elif selected_page == "Failure Prediction Demo":
     st.subheader("Live Machine Failure Prediction Demo")
-    model_path = MODELS / "machine_failure_model.joblib"
-    if not model_path.exists():
-        st.warning("Model not found. Run: python train_models.py")
-    else:
-        model = joblib.load(model_path)
-        sample = df.drop(columns=["UDI", "Product ID", "Machine failure", "TWF", "HDF", "PWF", "OSF", "RNF", "Failure Type"], errors="ignore").iloc[[0]].copy()
-        edited = st.data_editor(sample, num_rows="fixed")
-        if st.button("Predict Machine Failure"):
-            pred = int(model.predict(edited)[0])
-            proba = model.predict_proba(edited)[0][1] if hasattr(model, "predict_proba") else pred
-            if pred == 1:
-                st.error(f"Predicted Result: MACHINE FAILURE RISK ({proba:.2%})")
-            else:
-                st.success(f"Predicted Result: NORMAL ({proba:.2%} failure probability)")
 
+    model_path = MODELS / "machine_failure_model.joblib"
+
+    from train_models import train_model
+
+    if not model_path.exists():
+        st.warning("Training AI model for first deployment...")
+        train_model()
+
+    model = joblib.load(model_path)
+
+    sample = df.drop(
+        columns=[
+            "UDI",
+            "Product ID",
+            "Machine failure",
+            "TWF",
+            "HDF",
+            "PWF",
+            "OSF",
+            "RNF",
+            "Failure Type",
+        ],
+        errors="ignore",
+    ).iloc[[0]].copy()
+
+    edited = st.data_editor(sample, num_rows="fixed")
+
+    if st.button("Predict Machine Failure"):
+        pred = int(model.predict(edited)[0])
+        proba = (
+            model.predict_proba(edited)[0][1]
+            if hasattr(model, "predict_proba")
+            else pred
+        )
+
+        if pred == 1:
+            st.error(f"Predicted Result: MACHINE FAILURE RISK ({proba:.2%})")
+        else:
+            st.success(f"Predicted Result: NORMAL ({proba:.2%} failure probability)")
 elif selected_page == "Failure Trend Prediction":
     st.subheader("Failure Trend Prediction Before Breakdown")
     signal_map = get_signal_map()
@@ -471,14 +496,14 @@ elif selected_page == "Failure Trend Prediction":
         points = px.scatter(warning_points, x="Sample_Index", y=signal, color="failure_status")
         for trace in points.data:
             fig.add_trace(trace)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     if not forecast_df.empty:
         fcol = f"forecast_{signal}"
         forecast_fig = px.line(forecast_df, x="Sample_Index", y=fcol, title="Future Forecast Trend")
         forecast_fig.add_hline(y=warning_threshold, line_dash="dash", annotation_text="Warning Threshold")
         forecast_fig.add_hline(y=failure_threshold, line_dash="dot", annotation_text="Failure Threshold")
-        st.plotly_chart(forecast_fig, width="stretch")
+        st.plotly_chart(forecast_fig, use_container_width=True)
 
     show_ticket(ticket)
 
@@ -519,7 +544,7 @@ elif selected_page == "AI Chatbot":
             st.markdown(query)
         with st.chat_message("assistant"):
             st.markdown(response)
-        st.dataframe(trend_df.tail(20), width="stretch")
+        st.dataframe(trend_df.tail(20), use_container_width=True)
 
 elif selected_page == "Maintenance Tickets":
     st.subheader("Maintenance Ticket Backlog")
@@ -529,5 +554,5 @@ elif selected_page == "Maintenance Tickets":
             trend_df, forecast_df, ticket, _, _ = get_latest_trend_ticket(module, signal, direction)
             rows.append(ticket)
     tickets = pd.DataFrame(rows).sort_values(["priority", "severity_score"], ascending=[True, False])
-    st.dataframe(tickets, width="stretch")
+    st.dataframe(tickets, use_container_width=True)
     st.download_button("Download Ticket Backlog CSV", tickets.to_csv(index=False), "steel_maintenance_ticket_backlog.csv", "text/csv")
