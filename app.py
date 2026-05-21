@@ -68,6 +68,105 @@ def load_metrics():
             return json.load(f)
     return None
 
+def render_model_evaluation(model, metrics):
+    """Show ML evaluation metrics required for the predictive maintenance report."""
+    if not metrics:
+        st.info("Model metrics not found yet. Retrain the model to generate the evaluation report.")
+        return
+
+    st.subheader("Model Performance Evaluation")
+
+    report = metrics.get("classification_report", {})
+    failure_report = report.get("1", {}) or report.get(1, {})
+
+    accuracy = float(metrics.get("accuracy", 0))
+    precision = float(failure_report.get("precision", 0))
+    recall = float(failure_report.get("recall", 0))
+    f1 = float(failure_report.get("f1-score", 0))
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Accuracy", f"{accuracy:.2%}")
+    col2.metric("Precision", f"{precision:.2%}")
+    col3.metric("Recall", f"{recall:.2%}")
+    col4.metric("F1-Score", f"{f1:.2%}")
+
+    st.caption(
+        "Precision, Recall, and F1-score are calculated for the failure class, "
+        "because detecting failures is more important than only predicting normal machines."
+    )
+
+    if "confusion_matrix" in metrics:
+        st.write("### Confusion Matrix")
+        cm = pd.DataFrame(
+            metrics["confusion_matrix"],
+            index=["Actual Normal", "Actual Failure"],
+            columns=["Predicted Normal", "Predicted Failure"],
+        )
+        st.dataframe(cm, use_container_width=True)
+
+        cm_long = cm.reset_index().melt(id_vars="index", var_name="Prediction", value_name="Count")
+        cm_long = cm_long.rename(columns={"index": "Actual"})
+        st.plotly_chart(
+            px.imshow(
+                cm,
+                text_auto=True,
+                aspect="auto",
+                title="Confusion Matrix Heatmap",
+            ),
+            use_container_width=True,
+        )
+
+    st.write("### Feature Importance")
+    feature_importance = metrics.get("feature_importance", [])
+    if feature_importance:
+        importance_df = pd.DataFrame(feature_importance)
+    else:
+        # Fallback for older metric files: derive names from the fitted pipeline if available.
+        try:
+            preprocess = model.named_steps["preprocess"]
+            classifier = model.named_steps["classifier"]
+            feature_names = preprocess.get_feature_names_out()
+            importance_df = pd.DataFrame(
+                {
+                    "Feature": feature_names,
+                    "Importance": classifier.feature_importances_,
+                }
+            )
+        except Exception:
+            importance_df = pd.DataFrame()
+
+    if not importance_df.empty:
+        importance_df["Feature"] = (
+            importance_df["Feature"]
+            .astype(str)
+            .str.replace("num__", "", regex=False)
+            .str.replace("cat__", "", regex=False)
+        )
+        importance_df = importance_df.sort_values("Importance", ascending=False).head(10)
+        st.plotly_chart(
+            px.bar(
+                importance_df.sort_values("Importance"),
+                x="Importance",
+                y="Feature",
+                orientation="h",
+                title="Top 10 Features Influencing Machine Failure",
+            ),
+            use_container_width=True,
+        )
+    else:
+        st.info("Feature importance is unavailable for this model file.")
+
+    with st.expander("View detailed classification report"):
+        st.dataframe(pd.DataFrame(report).transpose(), use_container_width=True)
+
+def classify_maintenance_risk(probability):
+    """Convert failure probability into an easy-to-understand risk level."""
+    if probability >= 0.70:
+        return "HIGH"
+    if probability >= 0.40:
+        return "MEDIUM"
+    return "LOW"
+
 # =========================
 # ALERT HELPERS
 # =========================
@@ -477,6 +576,11 @@ elif selected_page == "Failure Prediction Demo":
         train_model()
         model = joblib.load(model_path)
 
+    metrics = load_metrics()
+    render_model_evaluation(model, metrics)
+
+    st.subheader("Try a Live Prediction")
+
     sample = df.drop(
         columns=[
             "UDI",
@@ -502,10 +606,19 @@ elif selected_page == "Failure Prediction Demo":
             else pred
         )
 
+        risk_level = classify_maintenance_risk(float(proba))
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Failure Probability", f"{proba:.2%}")
+        col2.metric("Maintenance Risk Level", risk_level)
+        col3.metric("Predicted Class", "Failure" if pred == 1 else "Normal")
+
         if pred == 1:
             st.error(f"Predicted Result: MACHINE FAILURE RISK ({proba:.2%})")
+            st.warning("Recommended Action: Inspect this machine within 24-48 hours and prioritize preventive maintenance.")
         else:
             st.success(f"Predicted Result: NORMAL ({proba:.2%} failure probability)")
+            st.info("Recommended Action: Continue routine monitoring and scheduled preventive maintenance.")
             
 elif selected_page == "Failure Trend Prediction":
     st.subheader("Failure Trend Prediction Before Breakdown")
