@@ -106,10 +106,8 @@ def send_telegram_alert(message):
 
         st.write("Telegram response:")
         st.json(result)
-        
 
         if response.status_code == 200 and result.get("ok"):
-
             return True
 
         st.error(result)
