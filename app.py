@@ -177,6 +177,19 @@ def render_alert_buttons(ticket):
                 st.success("Email alert sent successfully.")
             else:
                 st.error("Email alert failed.")
+                
+def auto_send_alert(ticket):
+    sent_key = f"alert_sent_{ticket['ticket_id']}"
+
+    if st.session_state.get(sent_key):
+        return
+
+    message = build_alert_message(ticket)
+
+    if send_telegram_alert(message):
+        st.success("Automatic Telegram alert sent.")
+
+    st.session_state[sent_key] = True
 
 # =========================
 # FAILURE TREND ENGINE
@@ -369,12 +382,19 @@ def show_ticket(ticket):
         st.info(ticket["maintenance_action"])
     else:
         st.success(ticket["maintenance_action"])
-
     st.write("**Likely Cause:**", ticket["likely_cause"])
     st.write("**Owner:**", ticket["owner"])
     st.write("**Forecast Warning Time:**", ticket["forecast_warning_time"])
     st.write("**Forecast Failure Time:**", ticket["forecast_failure_time"])
-    st.download_button("Download Maintenance Ticket CSV", pd.DataFrame([ticket]).to_csv(index=False), f"{ticket['ticket_id']}.csv", "text/csv")
+
+    st.download_button(
+        "Download Maintenance Ticket CSV",
+        pd.DataFrame([ticket]).to_csv(index=False),
+        f"{ticket['ticket_id']}.csv",
+        "text/csv"
+    )
+
+    auto_send_alert(ticket)
     render_alert_buttons(ticket)
 
 def get_latest_trend_ticket(module, signal, direction, window=10, forecast_periods=15):
