@@ -73,22 +73,14 @@ def load_metrics():
 # =========================
 def send_telegram_alert(message):
 
-    bot_token = st.secrets.get(
-        "TELEGRAM_BOT_TOKEN",
-        ""
-    ).strip()
-
-    chat_id = st.secrets.get(
-        "TELEGRAM_CHAT_ID",
-        ""
-    ).strip()
+    bot_token = st.secrets.get("TELEGRAM_BOT_TOKEN", "").strip()
+    chat_id = st.secrets.get("TELEGRAM_CHAT_ID", "").strip()
 
     if not bot_token or not chat_id:
         st.error("Telegram secrets missing.")
         return False
 
     try:
-
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
         payload = {
@@ -96,12 +88,7 @@ def send_telegram_alert(message):
             "text": str(message),
         }
 
-        response = requests.post(
-            url,
-            json=payload,
-            timeout=10,
-        )
-
+        response = requests.post(url, json=payload, timeout=10)
         result = response.json()
 
         st.write("Telegram response:")
@@ -111,16 +98,15 @@ def send_telegram_alert(message):
             return True
 
         st.error(result)
-
         return False
 
     except Exception as e:
-
         st.error(f"Telegram alert failed: {e}")
-
         return False
-    
-    if st.sidebar.button("TEST TELEGRAM"):
+
+
+# TEST BUTTON must be OUTSIDE the function
+if st.sidebar.button("TEST TELEGRAM"):
     if send_telegram_alert("hi"):
         st.sidebar.success("Telegram test sent.")
     else:
