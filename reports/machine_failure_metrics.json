@@ -1,0 +1,50 @@
+{
+  "accuracy": 0.9875,
+  "classification_report": {
+    "0": {
+      "precision": 0.9887237314197848,
+      "recall": 0.9984472049689441,
+      "f1-score": 0.993561679114087,
+      "support": 1932.0
+    },
+    "1": {
+      "precision": 0.9387755102040817,
+      "recall": 0.6764705882352942,
+      "f1-score": 0.7863247863247863,
+      "support": 68.0
+    },
+    "accuracy": 0.9875,
+    "macro avg": {
+      "precision": 0.9637496208119332,
+      "recall": 0.8374588966021191,
+      "f1-score": 0.8899432327194366,
+      "support": 2000.0
+    },
+    "weighted avg": {
+      "precision": 0.9870254918984509,
+      "recall": 0.9875,
+      "f1-score": 0.9865156247592507,
+      "support": 2000.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      1929,
+      3
+    ],
+    [
+      22,
+      46
+    ]
+  ],
+  "features": [
+    "Type",
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]",
+    "Temperature difference [K]",
+    "Mechanical power proxy"
+  ]
+}
