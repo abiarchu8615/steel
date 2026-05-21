@@ -72,26 +72,53 @@ def load_metrics():
 # ALERT HELPERS
 # =========================
 def send_telegram_alert(message):
-    bot_token = st.secrets.get("TELEGRAM_BOT_TOKEN", os.getenv("TELEGRAM_BOT_TOKEN", "8230608175:AAHnMtm1w3oLcsTridWX11NfQmBBFdtQMfw")).strip()
-    chat_id = st.secrets.get("TELEGRAM_CHAT_ID", os.getenv("TELEGRAM_CHAT_ID", "8172522699")).strip()
+
+    bot_token = st.secrets.get(
+        "TELEGRAM_BOT_TOKEN",
+        ""
+    ).strip()
+
+    chat_id = st.secrets.get(
+        "TELEGRAM_CHAT_ID",
+        ""
+    ).strip()
 
     if not bot_token or not chat_id:
-        st.error("Telegram credentials missing. Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Streamlit secrets.")
+        st.error("Telegram secrets missing.")
         return False
 
     try:
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+        payload = {
+            "chat_id": chat_id,
+            "text": str(message),
+        }
+
         response = requests.post(
-            f"https://api.telegram.org/bot{bot_token}/sendMessage",
-            json={"chat_id": chat_id, "text": str(message)},
+            url,
+            json=payload,
             timeout=10,
         )
+
         result = response.json()
-        if response.status_code == 200 and result.get("ok") is True:
+
+        st.write("Telegram response:")
+        st.json(result)
+
+        if response.status_code == 200 and result.get("ok"):
+
             return True
-        st.error(f"Telegram alert failed: {result.get('description', response.text)}")
+
+        st.error(result)
+
         return False
+
     except Exception as e:
+
         st.error(f"Telegram alert failed: {e}")
+
         return False
 
 def send_email_alert(subject, message):
