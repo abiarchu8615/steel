@@ -91,8 +91,7 @@ def send_telegram_alert(message):
         response = requests.post(url, json=payload, timeout=10)
         result = response.json()
 
-        st.write("Telegram response:")
-        st.json(result)
+       
 
         if response.status_code == 200 and result.get("ok"):
             return True
@@ -105,12 +104,7 @@ def send_telegram_alert(message):
         return False
 
 
-# TEST BUTTON must be OUTSIDE the function
-if st.sidebar.button("TEST TELEGRAM"):
-    if send_telegram_alert("hi"):
-        st.sidebar.success("Telegram test sent.")
-    else:
-        st.sidebar.error("Telegram test failed.")
+
 
 def send_email_alert(subject, message):
     sender_email = st.secrets.get("EMAIL_SENDER", os.getenv("EMAIL_SENDER", "")).strip()
